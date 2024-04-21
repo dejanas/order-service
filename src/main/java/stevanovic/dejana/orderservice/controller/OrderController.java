@@ -65,7 +65,6 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<?> delete(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
                                     @PathVariable Long id) {
         if (authenticationService.validateAdminToken(jwtToken)) {
@@ -80,7 +79,6 @@ public class OrderController {
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<?> getOrdersForUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
                                               @RequestBody GetOrdersRequest getOrdersRequest) {
         if (authenticationService.validateOwnerToken(jwtToken, getOrdersRequest.getUserId())) {
