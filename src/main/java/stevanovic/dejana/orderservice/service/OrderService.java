@@ -33,7 +33,7 @@ public class OrderService {
     private static final String PRODUCT_SERVICE_URL = "http://product-service/api/product";
 
     public Order createOrder(String jwtToken, CreateOrderRequest createOrderRequest) {
-        if (isProductInStock(jwtToken, createOrderRequest.getProductIds())){
+        if (isProductInStock(jwtToken, createOrderRequest.getProductIds())) {
             Order order = Order.builder()
                     .userId(createOrderRequest.getUserId())
                     .productIds(createOrderRequest.getProductIds())
@@ -45,6 +45,7 @@ public class OrderService {
         }
     }
 
+// Reactive version
 //    private boolean isProductInStock(String productIds) {
 //        ProductResponse[] productResponseArray = webClientBuilder.build().get()
 //                .uri(PRODUCT_SERVICE_URL,
@@ -65,7 +66,7 @@ public class OrderService {
         List<String> productIdList = List.of(productIds.split(","));
         boolean isInStock = true;
 
-        for(String productId : productIdList){
+        for (String productId : productIdList) {
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(PRODUCT_SERVICE_URL)
                     .queryParam("id", productId);
 
