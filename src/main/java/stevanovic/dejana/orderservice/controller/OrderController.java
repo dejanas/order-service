@@ -36,7 +36,7 @@ public class OrderController {
     public ResponseEntity<?> create(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
                        @RequestBody CreateOrderRequest createOrderRequest) {
         if (authenticationService.validateToken(jwtToken)) {
-            orderService.createOrder(createOrderRequest);
+            orderService.createOrder(jwtToken, createOrderRequest);
             return ResponseEntity.ok("Order created successfully");
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

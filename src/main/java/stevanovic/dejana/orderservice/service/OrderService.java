@@ -2,8 +2,13 @@ package stevanovic.dejana.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import stevanovic.dejana.orderservice.dto.CreateOrderRequest;
 import stevanovic.dejana.orderservice.dto.GetOrdersRequest;
 import stevanovic.dejana.orderservice.dto.ProductResponse;
@@ -11,7 +16,6 @@ import stevanovic.dejana.orderservice.dto.UpdateOrderRequest;
 import stevanovic.dejana.orderservice.model.Order;
 import stevanovic.dejana.orderservice.repository.OrderRepository;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,10 +29,11 @@ import static stevanovic.dejana.orderservice.util.ErrorCodes.UPDATE_ORDER_NOT_EX
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final WebClient.Builder webClientBuilder;
+    private final RestTemplate restTemplate;
+    private static final String PRODUCT_SERVICE_URL = "http://product-service/api/product";
 
-    public void createOrder(CreateOrderRequest createOrderRequest) {
-        if (isProductInStock(createOrderRequest.getProductIds())){
+    public void createOrder(String jwtToken, CreateOrderRequest createOrderRequest) {
+        if (isProductInStock(jwtToken, createOrderRequest.getProductIds())){
             Order order = Order.builder()
                     .userId(createOrderRequest.getUserId())
                     .productIds(createOrderRequest.getProductIds())
@@ -42,16 +47,37 @@ public class OrderService {
         }
     }
 
-    private boolean isProductInStock(String productIds) {
-        ProductResponse[] productResponseArray = webClientBuilder.build().get()
-                .uri("http://product-service/api/product",
-                        uriBuilder -> uriBuilder.queryParam("productIds", productIds).build())
-                .retrieve()
-                .bodyToMono(ProductResponse[].class)
-                .block();
+//    private boolean isProductInStock(String productIds) {
+//        ProductResponse[] productResponseArray = webClientBuilder.build().get()
+//                .uri(PRODUCT_SERVICE_URL,
+//                        uriBuilder -> uriBuilder.queryParam("productIds", productIds).build())
+//                .retrieve()
+//                .bodyToMono(ProductResponse[].class)
+//                .block();
+//
+//        return Arrays.stream(productResponseArray)
+//                .allMatch(ProductResponse::isInStock);
+//    }
 
-        return Arrays.stream(productResponseArray)
-                .allMatch(ProductResponse::isInStock);
+    public boolean isProductInStock(String jwtToken, String productIds) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, jwtToken);
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        List<String> productIdList = List.of(productIds.split(","));
+        boolean isInStock = true;
+
+        for(String productId : productIdList){
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(PRODUCT_SERVICE_URL)
+                    .queryParam("id", productId);
+
+            ResponseEntity<ProductResponse> response =
+                    restTemplate.exchange(builder.toUriString(), HttpMethod.GET, entity, ProductResponse.class);
+
+            isInStock &= response.getBody() != null;
+        }
+
+        return isInStock;
     }
 
     public void updateOrder(Long id, UpdateOrderRequest updateOrderRequest) {
