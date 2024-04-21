@@ -32,16 +32,14 @@ public class OrderService {
     private final RestTemplate restTemplate;
     private static final String PRODUCT_SERVICE_URL = "http://product-service/api/product";
 
-    public void createOrder(String jwtToken, CreateOrderRequest createOrderRequest) {
+    public Order createOrder(String jwtToken, CreateOrderRequest createOrderRequest) {
         if (isProductInStock(jwtToken, createOrderRequest.getProductIds())){
             Order order = Order.builder()
                     .userId(createOrderRequest.getUserId())
                     .productIds(createOrderRequest.getProductIds())
                     .build();
 
-            // publish Order Created Event
-            orderRepository.save(order);
-            log.info("Order {} is saved", order.getId());
+            return orderRepository.save(order);
         } else {
             throw new IllegalArgumentException(CREATE_ORDER_PRODUCT_NOT_IN_STOCK.name());
         }

@@ -7,6 +7,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
@@ -24,6 +26,33 @@ public class AuthenticationService {
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.AUTHORIZATION, jwtToken);
         HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        return response.getStatusCode().is2xxSuccessful();
+    }
+
+    public boolean validateAdminToken(String jwtToken) {
+        String url = USER_SERVICE_URL + "/admin/validate-token";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, jwtToken);
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+        return response.getStatusCode().is2xxSuccessful();
+    }
+
+    public boolean validateOwnerToken(String jwtToken, Long userId) {
+        String url = USER_SERVICE_URL + "/admin/validate-owner-token";
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("userId", String.valueOf(userId));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, jwtToken);
+        HttpEntity<?> entity = new HttpEntity<>(body, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 

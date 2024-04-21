@@ -1,5 +1,6 @@
 package stevanovic.dejana.orderservice.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,8 @@ import stevanovic.dejana.orderservice.model.Order;
 import stevanovic.dejana.orderservice.service.AuthenticationService;
 import stevanovic.dejana.orderservice.service.OrderService;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 @RestController
@@ -32,33 +35,59 @@ public class OrderController {
     private final AuthenticationService authenticationService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<?> create(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
-                       @RequestBody CreateOrderRequest createOrderRequest) {
+    public ResponseEntity<?> create(HttpServletRequest request,
+                                    @RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
+                                    @RequestBody CreateOrderRequest createOrderRequest) throws URISyntaxException {
         if (authenticationService.validateToken(jwtToken)) {
-            orderService.createOrder(jwtToken, createOrderRequest);
-            return ResponseEntity.ok("Order created successfully");
+            Order order = orderService.createOrder(jwtToken, createOrderRequest);
+            String uri = request.getRequestURI() + "/" + order.getId();
+
+            return ResponseEntity
+                    .created(new URI(uri))
+                    .build();
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
     @PatchMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public void update(@PathVariable Long id, @RequestBody UpdateOrderRequest updateOrderRequest) {
-        orderService.updateOrder(id, updateOrderRequest);
+    public ResponseEntity<?> update(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
+                                    @PathVariable Long id, @RequestBody UpdateOrderRequest updateOrderRequest) {
+        if (authenticationService.validateOwnerToken(jwtToken, updateOrderRequest.getUserId())) {
+            orderService.updateOrder(id, updateOrderRequest);
+
+            return ResponseEntity
+                    .noContent()
+                    .build();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public void delete(@PathVariable Long id) {
-        orderService.deleteOrder(id);
+    public ResponseEntity<?> delete(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
+                                    @PathVariable Long id) {
+        if (authenticationService.validateAdminToken(jwtToken)) {
+            orderService.deleteOrder(id);
+
+            return ResponseEntity
+                    .noContent()
+                    .build();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<Order> getOrdersForUser(@RequestBody GetOrdersRequest getOrdersRequest) {
-        return orderService.getOrdersForUser(getOrdersRequest);
+    public ResponseEntity<?> getOrdersForUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String jwtToken,
+                                              @RequestBody GetOrdersRequest getOrdersRequest) {
+        if (authenticationService.validateOwnerToken(jwtToken, getOrdersRequest.getUserId())) {
+            return ResponseEntity.ok(orderService.getOrdersForUser(getOrdersRequest));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
 }
