@@ -44,7 +44,7 @@ public class OrderService {
 
     private boolean isProductInStock(String productIds) {
         ProductResponse[] productResponseArray = webClientBuilder.build().get()
-                .uri("http://product-service/api/product", //TODO: implement API gateway and discovery server
+                .uri("http://product-service/api/product",
                         uriBuilder -> uriBuilder.queryParam("productIds", productIds).build())
                 .retrieve()
                 .bodyToMono(ProductResponse[].class)
@@ -52,7 +52,6 @@ public class OrderService {
 
         return Arrays.stream(productResponseArray)
                 .allMatch(ProductResponse::isInStock);
-
     }
 
     public void updateOrder(Long id, UpdateOrderRequest updateOrderRequest) {
